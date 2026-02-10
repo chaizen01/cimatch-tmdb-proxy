@@ -21,20 +21,25 @@ const PORT = Number(process.env.PORT || 8080);
 // =======================
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
-// ✅ fetch'in DNS'i OS'tan değil resolve4'ten gelsin
-const tmdbDispatcher = new Agent({
-  connect: {
-    lookup: (hostname, opts, cb) => {
-      dns.resolve4(hostname, (err, addresses) => {
-        if (err || !addresses || addresses.length === 0) {
-          return cb(err || new Error("DNS resolve failed"));
-        }
-        cb(null, addresses[0], 4);
-      });
+// ✅ Local PC'de DNS bozuksa aç (FORCE_DNS=1)
+// Render/Prod'da kapalı kalsın
+if (process.env.FORCE_DNS === "1") {
+  const tmdbDispatcher = new Agent({
+    connect: {
+      lookup: (hostname, opts, cb) => {
+        dns.resolve4(hostname, (err, addresses) => {
+          if (err || !addresses || addresses.length === 0) {
+            return cb(err || new Error("DNS resolve failed"));
+          }
+          cb(null, addresses[0], 4);
+        });
+      },
     },
-  },
-});
-setGlobalDispatcher(tmdbDispatcher);
+  });
+
+  setGlobalDispatcher(tmdbDispatcher);
+}
+
 
 function tmdbHeaders() {
   const token = process.env.TMDB_BEARER;
